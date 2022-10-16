@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Service
+ServiceTypes=Krita/PythonPlugin
+X-KDE-Library=krita_stablehorde
+X-Python-2-Compatible=false
+Name=Krita Stablehorde
+Comment=Krita plugin for generating stable-diffusion images for free by using Stablehorde.
