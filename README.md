@@ -11,7 +11,7 @@ The plugin has been tested in Krita 5.1.1.
 
 1. Download the [Krita plugin zip](https://github.com/blueturtleai/krita-stable-diffusion/releases/download/v1.0.0/krita_stablehorde_1_0_0.zip).
 
-2. Start Krita and open the "Tools/Scripts/Import Pypthon Plugin from File" menu and select the downloaded zip. Restart Krita.
+2. Start Krita and open the "Tools/Scripts/Import Python Plugin from File" menu and select the downloaded zip. Restart Krita.
 
 3. You should see now the new menu item "Tools/Scripts/Stablehorde". If this is not the case, something went wrong.
 
