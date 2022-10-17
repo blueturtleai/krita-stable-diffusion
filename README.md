@@ -2,6 +2,12 @@
 
 This repository includes a Krita plugin for communication with [stablehorde](https://stablehorde.net). Stablehorde is a cluster of stable-diffusion servers run by volunteers. You can create stable-diffusion images for free without running a colab notebook or a local server. Please check the section "Limitations" to better understand where the limits are.
 
+
+https://user-images.githubusercontent.com/113246030/196197783-ee750552-b4f9-4722-8a23-0116a1674c9e.MOV
+
+
+
+
 Please check HISTORY.md for the latest changes. 
 
 ## Installation
