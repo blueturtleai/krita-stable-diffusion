@@ -18,7 +18,7 @@ The plugin has been tested in Krita 5.1.1.
 ## Generate images
 Now we are ready for generating images.
 
-1. Start Krita and open create a new document with a minimum size of 512x512 and a paint layer.
+1. Start Krita and create a new document with a minimum size of 512x512 and a paint layer.
 
 2. Select the new "Tools/Scripts/Stablehorde" menu item. A dialog will open, where you can enter the details for the image generation.
 
@@ -26,7 +26,7 @@ Now we are ready for generating images.
 
    - **Steps:** How many steps the AI should use to generate the image. The higher the value, the more the AI will work on details. But it also means, the longer the generation takes and the more the GPU is used. 50 is a good value to use.
 
-   - **Seed:** This parameter is optional. If it is empty, a random seed will be generated on the server. If you use a seed, the same image is generated again in the case the same parameters for init strength, steps, etc. are used. A slightly different image will be generated, if the parameters are modified. You find the seed as part of the layername of the layer, where the generated image is displayed. 
+   - **Seed:** This parameter is optional. If it is empty, a random seed will be generated on the server. If you use a seed, the same image is generated again in the case the same parameters for init strength, steps, etc. are used. A slightly different image will be generated, if the parameters are modified. You find the seed as part of the layer name of the layer, where the generated image is displayed. 
 
    - **NSFW:** If you want to send a prompt, which is excplicitly NSFW (Not Safe For Work). If you flag your request as NSFW, only servers, which accept NSFW prompts, work on the request. It's very likely, that it takes then longer than usual to generate the image. If you don't flag the prompt, but it is NSFW, you will receive a black image.
 
@@ -36,14 +36,11 @@ Now we are ready for generating images.
 
    - **Max Wait:** The maximum time in minutes you want to wait until image generation is finished. When the max time is reached, a timeout happens and the generation request is stopped.
 
-3. Click on the "Generate" button. The values you inserted into the dialog will be transmitted to the server, which dispatches the request now to one of the stable-diffusion servers in the cluster. Your generation request is added to queue. You will see now the status "Waiting for generated image..." and all imput elements of the dialog are disabled. When the image has been generated successfully, it will be shown as a new layer of the opened document. The used seed is shown part of the name of the new layer.
+   - **Generate:** Start image generation. The values you inserted into the dialog will be transmitted to the server, which dispatches the request now to one of the stable-diffusion servers in the cluster. Your generation request is added to the queue. You will see now the status "Waiting for generated image..." and all input elements of the dialog are disabled. When the image has been generated successfully, it will be shown as a new layer of the opened document. The used seed is shown as a part of the name of the new layer. If an error during generation occurs, the error message will be shown in the status textarea and all input elements will be enabled again.
 
-If an error occurs during image generation, this error will be displayed in most cases in the status textarea and all input elements are enabled again. Due to technical problems, in some cases no error message can be displayed. In these cases all input elements are enabled again and you can try starting generating again.
+   - **Cancel:** Close the dialog. If you cancel when you already started generation, generation will be stopped.
 
 ## Limitations
-   - **Status updates:** Unfortunately, currently you only see the initial status "Waiting for generated image..." and no progress information. This is due to technical problems at updating the status message.
-   
-   - **Error information:** Due to technical problems, in some cases no error message can be displayed. In these cases all input elements are enabled again and you can try starting generating again. 
 
    - **Stability:** Stablehorde is still pretty new and under heavy development. So, it's not unlikely, that the servers are not available for some time or unexpected errors occur.
 
