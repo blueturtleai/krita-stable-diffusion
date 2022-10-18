@@ -1,4 +1,4 @@
-# v1.0.0
+# v1.0.1
 
 import base64
 import json
@@ -9,7 +9,7 @@ import urllib
 
 from krita import *
 
-VERSION = 100
+VERSION = 101
 
 class Stablehorde(Extension):
    def __init__(self, parent):
@@ -143,12 +143,23 @@ class Dialog(QDialog):
       else:
          self.writeSettings()
          self.setEnabledStatus(False)
+         self.statusDisplay.setText("Waiting for generated image...")
+         worker.generate(self)
 
-         try:
-            worker.generate(self)
-         except Exception as ex:
+   def customEvent(self, ev):
+      if ev.type() == worker.eventId:
+         print(str(ev.message))
+
+         if ev.updateType == UpdateEvent.TYPE_CHECKED:
+            self.statusDisplay.setText(ev.message)
+         elif ev.updateType == UpdateEvent.TYPE_TIMEOUT:
+            self.statusDisplay.setText(ev.message)
             self.setEnabledStatus(True)
-            self.statusDisplay.setText("An error occurred: " + str(ex))
+         elif ev.updateType == UpdateEvent.TYPE_ERROR:
+            self.statusDisplay.setText("An error occurred: " + ev.message)
+            self.setEnabledStatus(True)
+         elif ev.updateType == UpdateEvent.TYPE_FINISHED:
+            self.close()
 
    def readSettings(self):
       settings = Application.readSetting("Stablehorde", "Config", None)
@@ -188,9 +199,6 @@ class Dialog(QDialog):
       self.writeSettings()
       self.close()
 
-   def handleError(self):
-      self.setEnabledStatus(True)
-
    def setEnabledStatus(self, status):
       self.promptStrength.setEnabled(status)
       self.steps.setEnabled(status)
@@ -210,6 +218,9 @@ class Worker():
    checkCounter = 0
    id = None
    cancelled = False
+
+   eventId = QEvent.registerEventType()
+   print("Event id: " + str(eventId))
 
    ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -251,21 +262,35 @@ class Worker():
          print("cancelled: " + str(self.cancelled))
 
          if self.checkCounter < self.checkMax and data["done"] == False and self.cancelled == False:
+            if data["processing"] == 0:
+               message = "Queue position: " + str(data["queue_position"]) + ", Wait time: " + str(data["wait_time"]) + "s"
+            elif data["processing"] > 0:
+              message = "Generating..."
+
+            ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_CHECKED, message)
+            QApplication.postEvent(self.dialog, ev)
+
             timer = threading.Timer(self.CHECK_WAIT, self.checkStatus)
             timer.start()
          elif self.checkCounter == self.checkMax and self.cancelled == False:
             minutes = (self.checkMax * self.CHECK_WAIT)/60
-            raise Exception("Image generation timed out after " + str(minutes) + " minutes. Please try it again later.")
+
+            message = "Image generation timed out after " + str(minutes) + " minutes. Please try it again later."
+            ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_TIMEOUT, message)
+            QApplication.postEvent(self.dialog, ev)
          elif data["done"] == True and self.cancelled == False:
             images = self.getImages()
             self.displayGenerated(images)
-            self.dialog.close()
             print("Done! Image count: " + str(len(images)))
+
+            ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_FINISHED)
+            QApplication.postEvent(self.dialog, ev)
 
          return
       except Exception as ex:
-         print(ex)
-         self.dialog.handleError()
+         print(str(ex))
+         ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_ERROR, str(ex))
+         QApplication.postEvent(self.dialog, ev)
 
    def generate(self, dialog):
       self.dialog = dialog
@@ -273,8 +298,6 @@ class Worker():
       self.cancelled = False
       self.id = None
       self.checkMax = (self.dialog.maxWait.value() * 60)/self.CHECK_WAIT
-
-      self.dialog.statusDisplay.setText("")
 
       nsfw = True if self.dialog.nsfw.isChecked() else False
 
@@ -315,7 +338,9 @@ class Worker():
 
          self.checkStatus()
       except Exception as ex:
-         raise ex
+         print(str(ex))
+         ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_ERROR, str(ex))
+         QApplication.postEvent(self.dialog, ev)
 
       return
 
@@ -352,6 +377,17 @@ class Utils():
             return {"update": False}
       else:
          return {"update": False}
+
+class UpdateEvent(QEvent):
+   TYPE_CHECKED = 0
+   TYPE_ERROR = 1
+   TYPE_TIMEOUT = 2
+   TYPE_FINISHED = 3
+
+   def __init__(self, eventId, updateType, message = ""):
+      self.updateType = updateType
+      self.message = message
+      super().__init__(eventId)
 
 Krita.instance().addExtension(Stablehorde(Krita.instance()))
 worker = Worker()
