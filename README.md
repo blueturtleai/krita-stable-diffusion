@@ -2,13 +2,10 @@
 
 This repository includes a Krita plugin for communication with [stablehorde](https://stablehorde.net). Stablehorde is a cluster of stable-diffusion servers run by volunteers. You can create stable-diffusion images for free without running a colab notebook or a local server. Please check the section "Limitations" to better understand where the limits are.
 
+Please check HISTORY.md for the latest changes. 
 
 https://user-images.githubusercontent.com/113246030/196197783-ee750552-b4f9-4722-8a23-0116a1674c9e.MOV
 
-
-
-
-Please check HISTORY.md for the latest changes. 
 
 ## Installation
 ### Krita
@@ -42,7 +39,7 @@ Now we are ready for generating images.
 
    - **Max Wait:** The maximum time in minutes you want to wait until image generation is finished. When the max time is reached, a timeout happens and the generation request is stopped.
 
-   - **Generate:** Start image generation. The values you inserted into the dialog will be transmitted to the server, which dispatches the request now to one of the stable-diffusion servers in the cluster. Your generation request is added to the queue. You will see now the status "Waiting for generated image..." and all input elements of the dialog are disabled. Generation can take between several seconds and several minutes depending on how many other requests are already in the queue and how many stable diffusion servers joined currently the cluster.<br>When the image has been generated successfully, it will be shown as a new layer of the opened document. The used seed is shown as a part of the name of the new layer. If an error during generation occurs, the error message will be shown in the status textarea and all input elements will be enabled again.
+   - **Generate:** Start image generation. The values you inserted into the dialog will be transmitted to the server, which dispatches the request now to one of the stable-diffusion servers in the cluster. Your generation request is added to the queue. You will see now the status "Queue Position..." and all input elements of the dialog are disabled. Generation can take between several seconds and several minutes depending on how many other requests are already in the queue and how many stable diffusion servers joined currently the cluster.<br>When the image has been generated successfully, it will be shown as a new layer of the opened document. The used seed is shown as a part of the name of the new layer. If an error during generation occurs, the error message will be shown in the status textarea and all input elements will be enabled again.
 
    - **Cancel:** Close the dialog. If you cancel when you already started generation, generation will be stopped.
 
