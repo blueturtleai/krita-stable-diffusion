@@ -21,7 +21,7 @@ The plugin has been tested in Krita 5.1.1.
 ## Generate images
 Now we are ready for generating images.
 
-1. Start Krita and create a new document with a minimum size of 512x512 and a paint layer.
+1. Start Krita and create a new document with a minimum size of 512x512, color mode "RGB/Alpha" (default), color depth 8bit (default) and a paint layer.
 
 2. Select the new "Tools/Scripts/Stablehorde" menu item. A dialog will open, where you can enter the details for the image generation.
 
