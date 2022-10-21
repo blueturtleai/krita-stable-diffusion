@@ -7,14 +7,14 @@ Bugfixes
 
 ### 1.1.0
 Changes
-- img2img is now supported
+- img2img is now supported.
 
 Bugfixes
-- if the dialog is closed via the cross, the generation is now stopped too
+- if the dialog was closed via the cross, the generation was not stopped.
 
 ### 1.0.1
 Changes
-- Now status information is displayed after generation start
+- Now status information is displayed after generation start.
 
 ### 1.0.0
-- Initial version
+- Initial version.
