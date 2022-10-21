@@ -1,15 +1,14 @@
-# v1.0.1
+# v1.1.0
 
 import base64
 import json
 import ssl
-import time
 import threading
 import urllib
 
 from krita import *
 
-VERSION = 101
+VERSION = 110
 
 class Stablehorde(Extension):
    def __init__(self, parent):
@@ -36,8 +35,44 @@ class Dialog(QDialog):
       self.setWindowTitle("Stablehorde")
       self.layout = QFormLayout()
 
+      # Generation Mode
+      box = QGroupBox()
+      self.modeText2Img = QRadioButton("Text -> Image")
+      self.modeImg2Img = QRadioButton("Image -> Image")
+      layoutV = QVBoxLayout()
+      layoutV.addWidget(self.modeText2Img)
+      layoutV.addWidget(self.modeImg2Img)
+      box.setLayout(layoutV)
+      label = QLabel("Generation Mode")
+      label.setStyleSheet("QLabel{margin-top:12px;}")
+      self.layout.addRow(label, box)
+
+      group = QButtonGroup()
+      group.addButton(self.modeText2Img, worker.MODE_TEXT2IMG)
+      group.addButton(self.modeImg2Img, worker.MODE_IMG2IMG)
+      group.button(settings["generationMode"]).setChecked(True)
+      self.generationMode = group
+      self.generationMode.buttonClicked.connect(self.handleModeChanged)
+
+      # Init Strength
+      slider = QSlider(Qt.Orientation.Horizontal, self)
+      slider.setRange(0, 10)
+      slider.setTickInterval(1)
+      slider.setValue(settings["initStrength"])
+      self.initStrength = slider
+      labelInitStrength = QLabel(str(self.initStrength.value()/10))
+      self.initStrength.valueChanged.connect(lambda: labelInitStrength.setText(str(self.initStrength.value()/10)))
+      layout = QHBoxLayout()
+      layout.addWidget(self.initStrength)
+      layout.addWidget(labelInitStrength)
+      container = QWidget()
+      container.setLayout(layout)
+      self.layout.addRow("Init Strength", container)
+
+      if self.generationMode.checkedId() == worker.MODE_TEXT2IMG:
+         self.initStrength.setEnabled(False)
+
       # Prompt Strength
-      label = QLabel("Prompt Strength")
       slider = QSlider(Qt.Orientation.Horizontal, self)
       slider.setRange(0, 20)
       slider.setTickInterval(1)
@@ -89,7 +124,7 @@ class Dialog(QDialog):
 
       # Max Wait
       slider = QSlider(Qt.Orientation.Horizontal, self)
-      slider.setRange(1, 10)
+      slider.setRange(1, 5)
       slider.setTickInterval(1)
       slider.setValue(settings["maxWait"])
       self.maxWait = slider
@@ -104,7 +139,7 @@ class Dialog(QDialog):
 
       # Status
       self.statusDisplay = QTextEdit()
-      self.statusDisplay.setEnabled(False)
+      self.statusDisplay.setReadOnly(True)
       self.layout.addRow("Status", self.statusDisplay)
 
       # Generate
@@ -122,7 +157,7 @@ class Dialog(QDialog):
       # Cancel
       cancelButton = QPushButton("Cancel")
       cancelButton.setFixedWidth(100)
-      cancelButton.clicked.connect(self.cancelled)
+      cancelButton.clicked.connect(self.reject)
       self.layout.addWidget(cancelButton)
       self.layout.setAlignment(cancelButton, Qt.AlignRight)
 
@@ -134,11 +169,29 @@ class Dialog(QDialog):
       if update["update"] is True:
          self.statusDisplay.setText(update["message"])
 
+   def handleModeChanged(self):
+      mode = self.generationMode.checkedId()
+
+      if mode == worker.MODE_TEXT2IMG:
+         self.initStrength.setEnabled(False)
+      elif mode == worker.MODE_IMG2IMG:
+         self.initStrength.setEnabled(True)
+
    def generate(self):
+      mode = self.generationMode.checkedId()
       doc = Application.activeDocument()
 
-      if doc == None:
-         utils.errorMessage("Please add a document with minimum size 512x512.", "For image generation a document with a layer is needed.")
+      if doc is None:
+         utils.errorMessage("Please open a document (check details).", "For image generation a document with size of 512x512, color model 'RGB/Alpha', color depth '8-bit integer' and a paint layer is needed.")
+         return
+      elif doc.width() != 512 or doc.height() != 512:
+         utils.errorMessage("Please use a document with size 512x512 (check details).", "For image generation a document with size of 512x512, color model 'RGB/Alpha', color depth '8-bit integer' and a paint layer is needed.")
+         return
+      elif doc.colorModel() != "RGBA" or doc.colorDepth() != "U8":
+         utils.errorMessage("Please use a document with 'RGB/Alpha' and '8-bit'", "For image generation a document with size of 512x512, color model 'RGB/Alpha', color depth '8-bit integer' and a paint layer is needed.")
+         return
+      elif mode == worker.MODE_IMG2IMG and worker.getInitNode() is None:
+         utils.errorMessage("Please add a visible layer which shows the init image.", "For image generation in mode img -> img a visible layer, which shows the init image, is needed.")
          return
       else:
          self.writeSettings()
@@ -146,10 +199,9 @@ class Dialog(QDialog):
          self.statusDisplay.setText("Waiting for generated image...")
          worker.generate(self)
 
+   #override
    def customEvent(self, ev):
       if ev.type() == worker.eventId:
-         print(str(ev.message))
-
          if ev.updateType == UpdateEvent.TYPE_CHECKED:
             self.statusDisplay.setText(ev.message)
          elif ev.updateType == UpdateEvent.TYPE_TIMEOUT:
@@ -161,26 +213,51 @@ class Dialog(QDialog):
          elif ev.updateType == UpdateEvent.TYPE_FINISHED:
             self.close()
 
-   def readSettings(self):
-      settings = Application.readSetting("Stablehorde", "Config", None)
+   #override
+   def reject(self):
+      global worker
+      worker.cancel()
+      self.writeSettings()
+      super().reject()
 
-      if not settings:
-         settings = {
-            "prompt": "",
-            "promptStrength": 8,
-            "steps": 50,
-            "seed": "",
-            "nsfw": 0,
-            "apikey": "",
-            "maxWait": 5
-         }
-      else:
-         settings = json.loads(settings)
+   def readSettings(self):
+      defaults = {
+         "generationMode": worker.MODE_TEXT2IMG,
+         "initStrength": 3,
+         "prompt": "",
+         "promptStrength": 8,
+         "steps": 50,
+         "seed": "",
+         "nsfw": 0,
+         "apikey": "",
+         "maxWait": 5
+      }
+
+      try:
+         settings = Application.readSetting("Stablehorde", "Config", None)
+
+         if not settings:
+            settings = defaults
+         else:
+            settings = json.loads(settings)
+            missing = False
+
+            for key in defaults:
+               if not key in settings:
+                  missing = True
+                  break
+
+            if missing is True:
+               settings = defaults
+      except Exception as ex:
+         settings = defaults
 
       return settings
 
    def writeSettings(self):
       settings = {
+         "generationMode": self.generationMode.checkedId(),
+         "initStrength": self.initStrength.value(),
          "prompt": self.prompt.toPlainText(),
          "promptStrength": self.promptStrength.value(),
          "steps": int(self.steps.value()),
@@ -190,16 +267,19 @@ class Dialog(QDialog):
          "maxWait": self.maxWait.value()
       }
 
-      settings = json.dumps(settings)
-      Application.writeSetting ("Stablehorde", "Config", settings)
-
-   def cancelled(self):
-      global worker
-      worker.cancel()
-      self.writeSettings()
-      self.close()
+      try:
+         settings = json.dumps(settings)
+         Application.writeSetting("Stablehorde", "Config", settings)
+      except Exception as ex:
+         ex = ex
 
    def setEnabledStatus(self, status):
+      self.modeText2Img.setEnabled(status)
+      self.modeImg2Img.setEnabled(status)
+
+      if self.generationMode.checkedId() == worker.MODE_IMG2IMG:
+         self.initStrength.setEnabled(status)
+
       self.promptStrength.setEnabled(status)
       self.steps.setEnabled(status)
       self.seed.setEnabled(status)
@@ -212,6 +292,8 @@ class Dialog(QDialog):
 class Worker():
    API_ROOT = "https://stablehorde.net/api/v2/"
    CHECK_WAIT = 5
+   MODE_TEXT2IMG = 1
+   MODE_IMG2IMG = 2
 
    dialog = None
    checkMax = None
@@ -220,17 +302,44 @@ class Worker():
    cancelled = False
 
    eventId = QEvent.registerEventType()
-   print("Event id: " + str(eventId))
 
    ssl._create_default_https_context = ssl._create_unverified_context
+
+   def getInitImage(self):
+      doc = Application.activeDocument()
+      nodeInit = self.getInitNode()
+
+      if nodeInit is not None:
+         bytes = nodeInit.pixelData(0, 0, doc.width(), doc.height())
+         image = QImage(bytes.data(), doc.width(), doc.height(), QImage.Format_RGBA8888).rgbSwapped()
+         bytes = QByteArray()
+         buffer = QBuffer(bytes)
+         image.save(buffer, "WEBP")
+         data = base64.b64encode(bytes.data())
+         data = data.decode("ascii")
+         return data
+      else:
+         raise Exception("No layer with init image found.")
+
+   def getInitNode(self):
+      doc = Application.activeDocument()
+      nodes = doc.topLevelNodes()
+
+      nodeInit = None
+
+      for node in nodes:
+         if node.visible() is True:
+            nodeInit = node
+
+      return nodeInit
 
    def displayGenerated(self, images):
       for image in images:
          seed = image["seed"]
-         data = image["img"].encode("ascii")
-         bytearr = QtCore.QByteArray.fromBase64(data)
-         image = QtGui.QImage()
-         image.loadFromData(bytearr, 'WEBP')
+         bytes = base64.b64decode(image["img"])
+         bytes = QByteArray(bytes)
+         image = QImage()
+         image.loadFromData(bytes, 'WEBP')
          ptr = image.bits()
          ptr.setsize(image.byteCount())
 
@@ -258,14 +367,12 @@ class Worker():
          data = json.loads(data)
 
          self.checkCounter = self.checkCounter + 1
-         print("checkCounter: " + str(self.checkCounter))
-         print("cancelled: " + str(self.cancelled))
 
          if self.checkCounter < self.checkMax and data["done"] == False and self.cancelled == False:
             if data["processing"] == 0:
                message = "Queue position: " + str(data["queue_position"]) + ", Wait time: " + str(data["wait_time"]) + "s"
             elif data["processing"] > 0:
-              message = "Generating..."
+               message = "Generating..."
 
             ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_CHECKED, message)
             QApplication.postEvent(self.dialog, ev)
@@ -281,14 +388,12 @@ class Worker():
          elif data["done"] == True and self.cancelled == False:
             images = self.getImages()
             self.displayGenerated(images)
-            print("Done! Image count: " + str(len(images)))
 
             ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_FINISHED)
             QApplication.postEvent(self.dialog, ev)
 
          return
       except Exception as ex:
-         print(str(ex))
          ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_ERROR, str(ex))
          QApplication.postEvent(self.dialog, ev)
 
@@ -299,34 +404,41 @@ class Worker():
       self.id = None
       self.checkMax = (self.dialog.maxWait.value() * 60)/self.CHECK_WAIT
 
-      nsfw = True if self.dialog.nsfw.isChecked() else False
+      try:
+         nsfw = True if self.dialog.nsfw.isChecked() else False
 
-      data = {
-         "prompt": self.dialog.prompt.toPlainText(),
-         "params": {
+         params = {
             "cfg_scale": self.dialog.promptStrength.value(),
             "height": 512,
             "width": 512,
             "steps": int(self.dialog.steps.value()),
             "seed": self.dialog.seed.text()
-         },
-         "nsfw": nsfw,
-         "censor_nsfw": False
-      }
+         }
 
-      print(data)
-      data = json.dumps(data).encode("utf-8")
+         data = {
+            "prompt": self.dialog.prompt.toPlainText(),
+            "params": params,
+            "nsfw": nsfw,
+            "censor_nsfw": False
+         }
 
-      apikey = "0000000000" if self.dialog.apikey.text() == "" else self.dialog.apikey.text()
-      headers = {"Content-Type": "application/json", "Accept": "application/json", "apikey": apikey}
-      print(headers)
+         mode = self.dialog.generationMode.checkedId()
 
-      url = self.API_ROOT + "generate/async"
+         if mode == worker.MODE_IMG2IMG:
+            init = self.getInitImage()
+            data.update({"source_image": init})
+            params.update({"denoising_strength": (1 - self.dialog.initStrength.value()/10)})
 
-      request = urllib.request.Request(url=url, data=data, headers=headers)
-      self.dialog.statusDisplay.setText("Waiting for generated image...")
+         data = json.dumps(data).encode("utf-8")
 
-      try:
+         apikey = "0000000000" if self.dialog.apikey.text() == "" else self.dialog.apikey.text()
+         headers = {"Content-Type": "application/json", "Accept": "application/json", "apikey": apikey}
+
+         url = self.API_ROOT + "generate/async"
+
+         request = urllib.request.Request(url=url, data=data, headers=headers)
+         self.dialog.statusDisplay.setText("Waiting for generated image...")
+
          response = urllib.request.urlopen(request)
          data = response.read()
 
@@ -338,14 +450,12 @@ class Worker():
 
          self.checkStatus()
       except Exception as ex:
-         print(str(ex))
          ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_ERROR, str(ex))
          QApplication.postEvent(self.dialog, ev)
 
       return
 
    def cancel(self):
-      print("generation cancelled")
       self.cancelled = True
 
 class Utils():
@@ -390,7 +500,7 @@ class UpdateEvent(QEvent):
       super().__init__(eventId)
 
 Krita.instance().addExtension(Stablehorde(Krita.instance()))
-worker = Worker()
 utils = Utils()
+worker = Worker()
 #dialog = Dialog()
 #dialog.exec()
