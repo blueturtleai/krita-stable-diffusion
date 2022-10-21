@@ -25,6 +25,10 @@ Now we are ready for generating images.
 
 2. Select the new "Tools/Scripts/Stablehorde" menu item. A dialog will open, where you can enter the details for the image generation.
 
+   - **Generation Mode:** If you want to generate an image based only on your prompt or based on an init image and your prompt.
+
+   - **Init Strength:** How much the AI should take the init image into account. The higher the value, the more will the generated image look like the init image. 0.3 is a good value to use.
+
    - **Prompt Strength:** How much the AI should follow the prompt. The higher the value, the more the AI will generate an image which looks like your prompt. 8 is a good value to use.
 
    - **Steps:** How many steps the AI should use to generate the image. The higher the value, the more the AI will work on details. But it also means, the longer the generation takes and the more the GPU is used. 50 is a good value to use.
@@ -57,6 +61,6 @@ Now we are ready for generating images.
 
 ## FAQ
 
-**Will Img2img, In- and Out-Painting be supported?** Very likely everything will be supported. This depends on which features the stablehorde cluster supports.
+**Will In- and Out-Painting be supported?** Pretty likely everything will be supported. This depends on which features the stablehorde cluster supports.
 
 **How do I report an error or request a new feature?** Please open a new issue in this repository.
