@@ -1,4 +1,4 @@
-# v1.1.0
+# v1.1.1
 
 import base64
 import json
@@ -8,7 +8,7 @@ import urllib
 
 from krita import *
 
-VERSION = 110
+VERSION = 111
 
 class Stablehorde(Extension):
    def __init__(self, parent):
@@ -192,6 +192,9 @@ class Dialog(QDialog):
          return
       elif mode == worker.MODE_IMG2IMG and worker.getInitNode() is None:
          utils.errorMessage("Please add a visible layer which shows the init image.", "For image generation in mode img -> img a visible layer, which shows the init image, is needed.")
+         return
+      elif len(self.prompt.toPlainText()) == 0:
+         utils.errorMessage("Please enter a prompt.", "For image generation a prompt is needed.")
          return
       else:
          self.writeSettings()
@@ -427,7 +430,7 @@ class Worker():
          if mode == worker.MODE_IMG2IMG:
             init = self.getInitImage()
             data.update({"source_image": init})
-            params.update({"denoising_strength": (1 - self.dialog.initStrength.value()/10)})
+            params.update({"denoising_strength": round((1 - self.dialog.initStrength.value()/10), 1)})
 
          data = json.dumps(data).encode("utf-8")
 
