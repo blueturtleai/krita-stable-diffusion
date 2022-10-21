@@ -12,7 +12,7 @@ https://user-images.githubusercontent.com/113246030/196197783-ee750552-b4f9-4722
 
 The plugin has been tested in Krita 5.1.1.
 
-1. Download the [Krita plugin zip](https://github.com/blueturtleai/krita-stable-diffusion/releases/download/v1.0.1/krita_stablehorde_1_0_1.zip).
+1. Download the [Krita plugin zip](https://github.com/blueturtleai/krita-stable-diffusion/releases/download/v1.1.0/krita_stablehorde_1_1_0.zip).
 
 2. Start Krita and open the "Tools/Scripts/Import Python Plugin from File" menu and select the downloaded zip. Restart Krita.
 
