@@ -10,7 +10,7 @@ Changes
 - img2img is now supported.
 
 Bugfixes
-- if the dialog was closed via the cross, the generation was not stopped.
+- If the dialog was closed via the cross, the generation was not stopped.
 
 ### 1.0.1
 Changes
