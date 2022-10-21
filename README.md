@@ -57,7 +57,7 @@ Now we are ready for generating images.
 
    - **Privacy:** The privacy stablehorde offers is similar to generating in a public discord channel. So, please assume, that neither your prompts nor your generated images are private.
    
-   - **Features:** Currently only text2img is available. As soon as stablehorde supports img2img and in-/out-painting, this will be available in the plugin too.
+   - **Features:** Currently only text2img and img2img are supported. As soon as stablehorde supports in-/out-painting, this will be available in the plugin too.
 
 ## FAQ
 
