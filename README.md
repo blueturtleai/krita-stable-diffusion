@@ -65,7 +65,7 @@ Now we are ready for generating images.
 
 ## Troubleshooting
 ### Linux
-- Please make sure, you have webp support installed as this is the image format stablehorde uses. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
+- Please make sure, you have webp support installed, as this is the image format stablehorde uses. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
 
 ## FAQ
 
