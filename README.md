@@ -12,7 +12,7 @@ https://user-images.githubusercontent.com/113246030/196197783-ee750552-b4f9-4722
 
 The plugin has been tested in Krita 5.1.1.
 
-**IMPORTANT** If you are running Linux, please make sure, you have webp support installed, as this is the image format stablehorde uses. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
+**IMPORTANT** If you are running Linux, please make sure, you have webp support for Qt5 installed, as this is the image format stablehorde uses. Execute the following command to check, if it's already supported: ```python -c "from PyQt5.Qt import *; print([bytes(x).decode('ascii') for x in QImageReader.supportedImageFormats()])"```. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
 
 1. Download the [Krita plugin zip](https://github.com/blueturtleai/krita-stable-diffusion/releases/download/v1.1.1/krita_stablehorde_1_1_1.zip).
 
@@ -53,7 +53,7 @@ Now we are ready for generating images.
 
 ## Troubleshooting
 ### Linux
-- Please make sure, you have webp support installed, as this is the image format stablehorde uses. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
+- Please make sure, you have webp support for Qt5 installed, as this is the image format stablehorde uses. Execute the following command to check, if it's already supported: ```python -c "from PyQt5.Qt import *; print([bytes(x).decode('ascii') for x in QImageReader.supportedImageFormats()])"```. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
 
 ## Limitations
 
