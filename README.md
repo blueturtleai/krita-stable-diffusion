@@ -63,6 +63,10 @@ Now we are ready for generating images.
    
    - **Features:** Currently only text2img and img2img are supported. As soon as stablehorde supports in-/out-painting, this will be available in the plugin too.
 
+## Troubleshooting
+### Linux
+- Please make sure, you have webp support installed as this is the image format stablehorde uses. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
+
 ## FAQ
 
 **Will In- and Out-Painting be supported?** Pretty likely everything will be supported. This depends on which features the stablehorde cluster supports.
