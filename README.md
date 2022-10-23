@@ -51,6 +51,10 @@ Now we are ready for generating images.
 
    - **Cancel:** Close the dialog. If you cancel when you already started generation, generation will be stopped.
 
+## Troubleshooting
+### Linux
+- Please make sure, you have webp support installed, as this is the image format stablehorde uses. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
+
 ## Limitations
 
    - **Stability:** Stablehorde is still pretty new and under heavy development. So, it's not unlikely, that the servers are not available for some time or unexpected errors occur.
@@ -62,10 +66,6 @@ Now we are ready for generating images.
    - **Privacy:** The privacy stablehorde offers is similar to generating in a public discord channel. So, please assume, that neither your prompts nor your generated images are private.
    
    - **Features:** Currently only text2img and img2img are supported. As soon as stablehorde supports in-/out-painting, this will be available in the plugin too.
-
-## Troubleshooting
-### Linux
-- Please make sure, you have webp support installed, as this is the image format stablehorde uses. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
 
 ## FAQ
 
