@@ -25,7 +25,7 @@ Now we are ready for generating images.
 
 1. Start Krita and create a new document with a size between 512x512 and 1024x1024, color mode "RGB/Alpha" (default), color depth 8bit (default) and a paint layer. The generated image has the size of the document. 
    - The larger the image, the longer you have to wait for generation. The reason is, that all servers in the cluster support 512x512, but not all larger sizes.
-   - Stable diffusion only creates image sizes which are a multiple of 64. This means, if your document has a size of 650x512, the generated image will have a size of 640x512.
+   - Stable diffusion only generates image sizes which are a multiple of 64. This means, if your document has a size of 650x512, the generated image will have a size of 640x512.
 
 2. Select the new "Tools/Scripts/Stablehorde" menu item. A dialog will open, where you can enter the details for the image generation.
 
@@ -71,6 +71,7 @@ Now we are ready for generating images.
    - **Features:** Currently only text2img and img2img are supported. As soon as stablehorde supports in-/out-painting, this will be available in the plugin too.
 
 ## FAQ
+**Why is generated image smaller than document?** Stable diffusion only generates image sizes which are a multiple of 64. This means, if your document has a size of 650x512, the generated image will have a size of 640x512.
 
 **Will In- and Out-Painting be supported?** Pretty likely everything will be supported. This depends on which features the stablehorde cluster supports.
 
