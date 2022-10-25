@@ -71,7 +71,7 @@ Now we are ready for generating images.
    - **Features:** Currently only text2img and img2img are supported. As soon as stablehorde supports in-/out-painting, this will be available in the plugin too.
 
 ## FAQ
-**Why is generated image smaller than document?** Stable diffusion only generates image sizes which are a multiple of 64. This means, if your document has a size of 650x512, the generated image will have a size of 640x512.
+**Why is the generated image smaller than the document?** Stable diffusion only generates image sizes which are a multiple of 64. This means, if your document has a size of 650x512, the generated image will have a size of 640x512.
 
 **Will In- and Out-Painting be supported?** Pretty likely everything will be supported. This depends on which features the stablehorde cluster supports.
 
