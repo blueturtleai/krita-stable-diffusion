@@ -4,7 +4,7 @@
 Changes
 - Now images with sizes between 512x512 and 1024x1024 can be generated. Before only 512x512.
 - The dialog has now two tabs to make the layout cleaner.
-- It is now checked, if support for webp in Qt5 exists.
+- It is now checked, if support for webp in Qt5 exists. On some Linux distributions the support is missing and needs to be installed manually.
 
 ### 1.1.1
 Bugfixes
