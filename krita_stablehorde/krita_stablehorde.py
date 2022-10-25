@@ -1,14 +1,15 @@
-# v1.1.1
+# v1.2.0
 
 import base64
 import json
 import ssl
 import threading
 import urllib
+import math
 
 from krita import *
 
-VERSION = 111
+VERSION = 120
 
 class Stablehorde(Extension):
    def __init__(self, parent):
@@ -28,12 +29,15 @@ class Stablehorde(Extension):
 class Dialog(QDialog):
    def __init__(self):
       super().__init__(None)
-      global worker
 
       settings = self.readSettings()
 
       self.setWindowTitle("Stablehorde")
-      self.layout = QFormLayout()
+      self.layout = QVBoxLayout()
+
+      # Basic Tab
+      tabBasic = QWidget()
+      layout = QFormLayout()
 
       # Generation Mode
       box = QGroupBox()
@@ -45,7 +49,7 @@ class Dialog(QDialog):
       box.setLayout(layoutV)
       label = QLabel("Generation Mode")
       label.setStyleSheet("QLabel{margin-top:12px;}")
-      self.layout.addRow(label, box)
+      layout.addRow(label, box)
 
       group = QButtonGroup()
       group.addButton(self.modeText2Img, worker.MODE_TEXT2IMG)
@@ -53,6 +57,53 @@ class Dialog(QDialog):
       group.button(settings["generationMode"]).setChecked(True)
       self.generationMode = group
       self.generationMode.buttonClicked.connect(self.handleModeChanged)
+
+      mode = self.generationMode.checkedId()
+
+      # NSFW
+      self.nsfw = QCheckBox()
+      self.nsfw.setCheckState(settings["nsfw"])
+      layout.addRow("NSFW",self.nsfw)
+
+      # Seed
+      self.seed = QLineEdit()
+      self.seed.setText(settings["seed"])
+      layout.addRow("Seed (optional)", self.seed)
+
+      # Prompt
+      self.prompt = QTextEdit()
+      self.prompt.setText(settings["prompt"])
+      layout.addRow("Prompt", self.prompt)
+
+      # Status
+      self.statusDisplay = QTextEdit()
+      self.statusDisplay.setReadOnly(True)
+      layout.addRow("Status", self.statusDisplay)
+
+      # Generate
+      self.generateButton = QPushButton("Generate")
+      self.generateButton.clicked.connect(self.generate)
+      layout.addWidget(self.generateButton)
+
+      # Space
+      layoutH = QHBoxLayout()
+      layoutH.addSpacing(50)
+      container = QWidget()
+      container.setLayout(layoutH)
+      layout.addWidget(container)
+
+      # Cancel
+      cancelButton = QPushButton("Cancel")
+      cancelButton.setFixedWidth(100)
+      cancelButton.clicked.connect(self.reject)
+      layout.addWidget(cancelButton)
+      layout.setAlignment(cancelButton, Qt.AlignRight)
+
+      tabBasic.setLayout(layout)
+
+      # Advanced Tab
+      tabAdvanced = QWidget()
+      layout = QFormLayout()
 
       # Init Strength
       slider = QSlider(Qt.Orientation.Horizontal, self)
@@ -62,14 +113,14 @@ class Dialog(QDialog):
       self.initStrength = slider
       labelInitStrength = QLabel(str(self.initStrength.value()/10))
       self.initStrength.valueChanged.connect(lambda: labelInitStrength.setText(str(self.initStrength.value()/10)))
-      layout = QHBoxLayout()
-      layout.addWidget(self.initStrength)
-      layout.addWidget(labelInitStrength)
+      layoutH = QHBoxLayout()
+      layoutH.addWidget(self.initStrength)
+      layoutH.addWidget(labelInitStrength)
       container = QWidget()
-      container.setLayout(layout)
-      self.layout.addRow("Init Strength", container)
+      container.setLayout(layoutH)
+      layout.addRow("Init Strength", container)
 
-      if self.generationMode.checkedId() == worker.MODE_TEXT2IMG:
+      if mode == worker.MODE_TEXT2IMG:
          self.initStrength.setEnabled(False)
 
       # Prompt Strength
@@ -80,12 +131,12 @@ class Dialog(QDialog):
       self.promptStrength = slider
       labelPromptStrength = QLabel(str(self.promptStrength.value()))
       self.promptStrength.valueChanged.connect(lambda: labelPromptStrength.setText(str(self.promptStrength.value())))
-      layout = QHBoxLayout()
-      layout.addWidget(self.promptStrength)
-      layout.addWidget(labelPromptStrength)
+      layoutH = QHBoxLayout()
+      layoutH.addWidget(self.promptStrength)
+      layoutH.addWidget(labelPromptStrength)
       container = QWidget()
-      container.setLayout(layout)
-      self.layout.addRow("Prompt Strength", container)
+      container.setLayout(layoutH)
+      layout.addRow("Prompt Strength", container)
 
       # Steps
       slider = QSlider(Qt.Orientation.Horizontal, self)
@@ -95,32 +146,17 @@ class Dialog(QDialog):
       self.steps = slider
       labelSteps = QLabel(str(self.steps.value()))
       self.steps.valueChanged.connect(lambda: labelSteps.setText(str(self.steps.value())))
-      layout = QHBoxLayout()
-      layout.addWidget(self.steps)
-      layout.addWidget(labelSteps)
+      layoutH = QHBoxLayout()
+      layoutH.addWidget(self.steps)
+      layoutH.addWidget(labelSteps)
       container = QWidget()
-      container.setLayout(layout)
-      self.layout.addRow("Steps", container)
-
-      # Seed
-      self.seed = QLineEdit()
-      self.seed.setText(settings["seed"])
-      self.layout.addRow("Seed (optional)", self.seed)
-
-      # NSFW
-      self.nsfw = QCheckBox()
-      self.nsfw.setCheckState(settings["nsfw"])
-      self.layout.addRow("NSFW",self.nsfw)
-
-      # Prompt
-      self.prompt = QTextEdit()
-      self.prompt.setText(settings["prompt"])
-      self.layout.addRow("Prompt", self.prompt)
+      container.setLayout(layoutH)
+      layout.addRow("Steps", container)
 
       # API Key
       self.apikey = QLineEdit()
       self.apikey.setText(settings["apikey"])
-      self.layout.addRow("API Key (optional)", self.apikey)
+      layout.addRow("API Key (optional)", self.apikey)
 
       # Max Wait
       slider = QSlider(Qt.Orientation.Horizontal, self)
@@ -130,39 +166,28 @@ class Dialog(QDialog):
       self.maxWait = slider
       labelMaxWait = QLabel(str(self.maxWait.value()))
       self.maxWait.valueChanged.connect(lambda: labelMaxWait.setText(str(self.maxWait.value())))
-      layout = QHBoxLayout()
-      layout.addWidget(self.maxWait)
-      layout.addWidget(labelMaxWait)
+      layoutH = QHBoxLayout()
+      layoutH.addWidget(self.maxWait)
+      layoutH.addWidget(labelMaxWait)
       container = QWidget()
-      container.setLayout(layout)
-      self.layout.addRow("Max Wait (minutes)", container)
+      container.setLayout(layoutH)
+      layout.addRow("Max Wait (minutes)", container)
 
-      # Status
-      self.statusDisplay = QTextEdit()
-      self.statusDisplay.setReadOnly(True)
-      self.layout.addRow("Status", self.statusDisplay)
+      tabAdvanced.setLayout(layout)
 
-      # Generate
-      self.generateButton = QPushButton("Generate")
-      self.generateButton.clicked.connect(self.generate)
-      self.layout.addWidget(self.generateButton)
-
-      # Space
-      layout = QHBoxLayout()
-      layout.addSpacing(50)
-      container = QWidget()
-      container.setLayout(layout)
-      self.layout.addWidget(container)
-
-      # Cancel
-      cancelButton = QPushButton("Cancel")
-      cancelButton.setFixedWidth(100)
-      cancelButton.clicked.connect(self.reject)
-      self.layout.addWidget(cancelButton)
-      self.layout.setAlignment(cancelButton, Qt.AlignRight)
+      tabs = QTabWidget()
+      tabs.addTab(tabBasic, "Basic")
+      tabs.addTab(tabAdvanced, "Advanced")
+      self.layout.addWidget(tabs)
 
       self.setLayout(self.layout)
       self.resize(350, 300)
+
+      webpSupport = utils.checkWebpSupport()
+
+      if webpSupport is False:
+         self.generateButton.setEnabled(False)
+         self.statusDisplay.setText("Your operating system doesn't support the webp image format. Please check troubleshooting section of readme on GitHub for solution.")
 
       update = utils.checkUpdate()
 
@@ -181,20 +206,25 @@ class Dialog(QDialog):
       mode = self.generationMode.checkedId()
       doc = Application.activeDocument()
 
+      # no document
       if doc is None:
-         utils.errorMessage("Please open a document (check details).", "For image generation a document with size of 512x512, color model 'RGB/Alpha', color depth '8-bit integer' and a paint layer is needed.")
+         utils.errorMessage("Please open a document. Please check details.", "For image generation a document with a width/height between 512 and 1024, color model 'RGB/Alpha', color depth '8-bit integer' and a paint layer is needed.")
          return
-      elif doc.width() != 512 or doc.height() != 512:
-         utils.errorMessage("Please use a document with size 512x512 (check details).", "For image generation a document with size of 512x512, color model 'RGB/Alpha', color depth '8-bit integer' and a paint layer is needed.")
-         return
+      # document has invalid color model or depth
       elif doc.colorModel() != "RGBA" or doc.colorDepth() != "U8":
-         utils.errorMessage("Please use a document with 'RGB/Alpha' and '8-bit'", "For image generation a document with size of 512x512, color model 'RGB/Alpha', color depth '8-bit integer' and a paint layer is needed.")
+         utils.errorMessage("Invalid document properties. Please check details.", "For image generation a document with color model 'RGB/Alpha', color depth '8-bit integer' is needed.")
          return
+      # document too small or large
+      elif doc.width() < 512 or doc.width() > 1024 or doc.height() < 512 or doc.height() > 1024:
+         utils.errorMessage("Invalid document size. Please check details.", "The document needs to have a width/height which is between 512 and 1024.")
+         return
+      # img2img missing init image layer
       elif mode == worker.MODE_IMG2IMG and worker.getInitNode() is None:
-         utils.errorMessage("Please add a visible layer which shows the init image.", "For image generation in mode img -> img a visible layer, which shows the init image, is needed.")
+         utils.errorMessage("Please add a visible layer which shows the init image.", "")
          return
+      # no prompt
       elif len(self.prompt.toPlainText()) == 0:
-         utils.errorMessage("Please enter a prompt.", "For image generation a prompt is needed.")
+         utils.errorMessage("Please enter a prompt.", "")
          return
       else:
          self.writeSettings()
@@ -218,7 +248,6 @@ class Dialog(QDialog):
 
    #override
    def reject(self):
-      global worker
       worker.cancel()
       self.writeSettings()
       super().reject()
@@ -383,8 +412,9 @@ class Worker():
             timer = threading.Timer(self.CHECK_WAIT, self.checkStatus)
             timer.start()
          elif self.checkCounter == self.checkMax and self.cancelled == False:
-            minutes = (self.checkMax * self.CHECK_WAIT)/60
+            self.cancelled = True
 
+            minutes = (self.checkMax * self.CHECK_WAIT)/60
             message = "Image generation timed out after " + str(minutes) + " minutes. Please try it again later."
             ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_TIMEOUT, message)
             QApplication.postEvent(self.dialog, ev)
@@ -412,8 +442,6 @@ class Worker():
 
          params = {
             "cfg_scale": self.dialog.promptStrength.value(),
-            "height": 512,
-            "width": 512,
             "steps": int(self.dialog.steps.value()),
             "seed": self.dialog.seed.text()
          }
@@ -424,6 +452,21 @@ class Worker():
             "nsfw": nsfw,
             "censor_nsfw": False
          }
+
+         doc = Application.activeDocument()
+
+         if doc.width() % 64 != 0:
+            width = math.floor(doc.width()/64) * 64
+         else:
+            width = doc.width()
+
+         if doc.height() % 64 != 0:
+            height = math.floor(doc.height()/64) * 64
+         else:
+            height = doc.height()
+
+         params.update({"width": width})
+         params.update({"height": height})
 
          mode = self.dialog.generationMode.checkedId()
 
@@ -490,6 +533,17 @@ class Utils():
             return {"update": False}
       else:
          return {"update": False}
+
+   def checkWebpSupport(self):
+      formats = QImageReader.supportedImageFormats()
+      found = False
+
+      for format in formats:
+         if format.data().decode("ascii").lower() == "webp":
+            found = True
+            break
+
+      return found
 
 class UpdateEvent(QEvent):
    TYPE_CHECKED = 0
