@@ -1,5 +1,11 @@
 # History
 ## Krita Plugin
+### 1.2.0
+Changes
+- Now images with sizes between 512x512 and 1024x1024 can be generated. Before only 512x512.
+- The dialog has now two tabs to make the layout cleaner.
+- It is now checked, if support for webp in Qt5 exists.
+
 ### 1.1.1
 Bugfixes
 - When using img2img in some cases an error 400 occurred.
