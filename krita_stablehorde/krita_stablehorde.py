@@ -1,4 +1,4 @@
-# v1.2.0
+# v1.3.0
 
 import base64
 import json
@@ -9,7 +9,7 @@ import math
 
 from krita import *
 
-VERSION = 120
+VERSION = 130
 
 class Stablehorde(Extension):
    def __init__(self, parent):
@@ -43,9 +43,11 @@ class Dialog(QDialog):
       box = QGroupBox()
       self.modeText2Img = QRadioButton("Text -> Image")
       self.modeImg2Img = QRadioButton("Image -> Image")
+      self.modeInpainting = QRadioButton("Inpainting")
       layoutV = QVBoxLayout()
       layoutV.addWidget(self.modeText2Img)
       layoutV.addWidget(self.modeImg2Img)
+      layoutV.addWidget(self.modeInpainting)
       box.setLayout(layoutV)
       label = QLabel("Generation Mode")
       label.setStyleSheet("QLabel{margin-top:12px;}")
@@ -54,6 +56,7 @@ class Dialog(QDialog):
       group = QButtonGroup()
       group.addButton(self.modeText2Img, worker.MODE_TEXT2IMG)
       group.addButton(self.modeImg2Img, worker.MODE_IMG2IMG)
+      group.addButton(self.modeInpainting, worker.MODE_INPAINTING)
       group.button(settings["generationMode"]).setChecked(True)
       self.generationMode = group
       self.generationMode.buttonClicked.connect(self.handleModeChanged)
@@ -218,9 +221,13 @@ class Dialog(QDialog):
       elif doc.width() < 512 or doc.width() > 1024 or doc.height() < 512 or doc.height() > 1024:
          utils.errorMessage("Invalid document size. Please check details.", "The document needs to have a width/height which is between 512 and 1024.")
          return
-      # img2img missing init image layer
+      # img2img: missing init image layer
       elif mode == worker.MODE_IMG2IMG and worker.getInitNode() is None:
          utils.errorMessage("Please add a visible layer which shows the init image.", "")
+         return
+      # img2img/inpainting: selection has to be removed otherwise crashes krita when creating init image
+      elif (mode == worker.MODE_IMG2IMG or mode == worker.MODE_INPAINTING) and doc.selection() is not None:
+         utils.errorMessage("Please remove the selection by clicking on the image.", "")
          return
       # no prompt
       elif len(self.prompt.toPlainText()) == 0:
@@ -308,6 +315,7 @@ class Dialog(QDialog):
    def setEnabledStatus(self, status):
       self.modeText2Img.setEnabled(status)
       self.modeImg2Img.setEnabled(status)
+      self.modeInpainting.setEnabled(status)
 
       if self.generationMode.checkedId() == worker.MODE_IMG2IMG:
          self.initStrength.setEnabled(status)
@@ -326,6 +334,7 @@ class Worker():
    CHECK_WAIT = 5
    MODE_TEXT2IMG = 1
    MODE_IMG2IMG = 2
+   MODE_INPAINTING = 3
 
    dialog = None
    checkMax = None
@@ -342,6 +351,9 @@ class Worker():
       nodeInit = self.getInitNode()
 
       if nodeInit is not None:
+         if doc.selection() is not None:
+            raise Exception("Selection has to be removed before creating init image.")
+
          bytes = nodeInit.pixelData(0, 0, doc.width(), doc.height())
          image = QImage(bytes.data(), doc.width(), doc.height(), QImage.Format_RGBA8888).rgbSwapped()
          bytes = QByteArray()
@@ -473,7 +485,14 @@ class Worker():
          if mode == worker.MODE_IMG2IMG:
             init = self.getInitImage()
             data.update({"source_image": init})
+            data.update({"source_processing": "img2img"})
             params.update({"denoising_strength": round((1 - self.dialog.initStrength.value()/10), 1)})
+         elif mode == worker.MODE_INPAINTING:
+            init = self.getInitImage()
+            models = ["stable_diffusion_inpainting"]
+            data.update({"source_image": init})
+            data.update({"source_processing": "inpainting"})
+            data.update({"models": models})
 
          data = json.dumps(data).encode("utf-8")
 
