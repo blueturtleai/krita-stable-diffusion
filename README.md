@@ -12,7 +12,7 @@ https://user-images.githubusercontent.com/113246030/196197783-ee750552-b4f9-4722
 
 The plugin has been tested in Krita 5.1.1.
 
-**IMPORTANT** If you are running Linux, please make sure, you have webp support for Qt5 installed, as this is the image format stablehorde uses. Execute the following command to check, if it's already supported: ```python -c "from PyQt5.Qt import *; print([bytes(x).decode('ascii') for x in QImageReader.supportedImageFormats()])"```. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
+**IMPORTANT:** If you are running Linux, please make sure, you have webp support for Qt5 installed, as this is the image format stablehorde uses. Execute the following command to check, if it's already supported: ```python -c "from PyQt5.Qt import *; print([bytes(x).decode('ascii') for x in QImageReader.supportedImageFormats()])"```. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
 
 1. Download the [Krita plugin zip](https://github.com/blueturtleai/krita-stable-diffusion/releases/download/v1.3.0/krita_stablehorde_1_3_0.zip).
 
@@ -31,7 +31,10 @@ Now we are ready for generating images.
 
 **Basic Tab**
 
-   - **Generation Mode:** If you want to generate an image based only on your prompt or based on an init image and your prompt.
+   - **Generation Mode:** 
+      - **Text -> Image:** Generate an image based on your prompt.
+      - **Image -> Image:** Generate an image based on an init image and on your prompt.
+      - **Inpainting:** Erase a part of an image and generate a new image which has the erased part filled. The erased part is filled based on your prompt. To erase, select in Krita the eraser mode or use an eraser brush preset. If you make a selection, please make sure to remove this selection before generating by clicking on the image. 
 
    - **NSFW:** If you want to send a prompt, which is excplicitly NSFW (Not Safe For Work). 
       - If you flag your request as NSFW, only servers, which accept NSFW prompts, work on the request. It's very likely, that it takes then longer than usual to generate the image. If you don't flag the prompt, but it is NSFW, you will receive a black image.
@@ -68,11 +71,11 @@ Now we are ready for generating images.
 
    - **Privacy:** The privacy stablehorde offers is similar to generating in a public discord channel. So, please assume, that neither your prompts nor your generated images are private.
    
-   - **Features:** Currently only text2img and img2img are supported. As soon as stablehorde supports in-/out-painting, this will be available in the plugin too.
+   - **Features:** Currently text2img, img2img and inpainting are supported. As soon as stablehorde supports out-painting, this will be available in the plugin too.
 
 ## FAQ
 **Why is the generated image smaller than the document?** Stable-diffusion only generates image sizes which are a multiple of 64. This means, if your document has a size of 650x512, the generated image will have a size of 640x512.
 
-**Will In- and Out-Painting be supported?** Pretty likely everything will be supported. This depends on which features the stablehorde cluster supports.
+**Will outpainting be supported?** Pretty likely outpainting will be supported. This depends on which features the stablehorde cluster supports.
 
 **How do I report an error or request a new feature?** Please open a new issue in this repository.
