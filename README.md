@@ -71,7 +71,7 @@ Now we are ready for generating images.
 
    - **Privacy:** The privacy stablehorde offers is similar to generating in a public discord channel. So, please assume, that neither your prompts nor your generated images are private.
    
-   - **Features:** Currently text2img, img2img and inpainting are supported. As soon as stablehorde supports out-painting, this will be available in the plugin too.
+   - **Features:** Currently text2img, img2img and inpainting are supported. As soon as stablehorde supports outpainting, this will be available in the plugin too.
 
 ## FAQ
 **Why is the generated image smaller than the document?** Stable-diffusion only generates image sizes which are a multiple of 64. This means, if your document has a size of 650x512, the generated image will have a size of 640x512.
