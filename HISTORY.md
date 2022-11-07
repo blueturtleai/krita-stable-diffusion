@@ -1,5 +1,14 @@
 # History
 ## Krita Plugin
+### 1.3.1
+Changes
+- In the case no worker is available for image generation, now a message is displayed.
+- Minimum size has been reduced from 512x512 to 384x384.
+
+Bugfixes
+- In the dialog init strength selector was not disabled in mode inpainting.
+- In the dialog in mode inpainting was not checked if a layer with an inpaiting image exists.
+
 ### 1.3.0
 Changes
 - Inpainting is supported now.
