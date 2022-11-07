@@ -1,4 +1,4 @@
-# v1.3.0
+# v1.3.1
 
 import base64
 import json
@@ -9,7 +9,7 @@ import math
 
 from krita import *
 
-VERSION = 130
+VERSION = 131
 
 class Stablehorde(Extension):
    def __init__(self, parent):
@@ -123,7 +123,7 @@ class Dialog(QDialog):
       container.setLayout(layoutH)
       layout.addRow("Init Strength", container)
 
-      if mode == worker.MODE_TEXT2IMG:
+      if mode == worker.MODE_TEXT2IMG or mode == worker.MODE_INPAINTING:
          self.initStrength.setEnabled(False)
 
       # Prompt Strength
@@ -200,7 +200,7 @@ class Dialog(QDialog):
    def handleModeChanged(self):
       mode = self.generationMode.checkedId()
 
-      if mode == worker.MODE_TEXT2IMG:
+      if mode == worker.MODE_TEXT2IMG or mode == worker.MODE_INPAINTING:
          self.initStrength.setEnabled(False)
       elif mode == worker.MODE_IMG2IMG:
          self.initStrength.setEnabled(True)
@@ -211,19 +211,19 @@ class Dialog(QDialog):
 
       # no document
       if doc is None:
-         utils.errorMessage("Please open a document. Please check details.", "For image generation a document with a width/height between 512 and 1024, color model 'RGB/Alpha', color depth '8-bit integer' and a paint layer is needed.")
+         utils.errorMessage("Please open a document. Please check details.", "For image generation a document with a size between 384x384 and 1024x1024, color model 'RGB/Alpha', color depth '8-bit integer' and a paint layer is needed.")
          return
       # document has invalid color model or depth
       elif doc.colorModel() != "RGBA" or doc.colorDepth() != "U8":
          utils.errorMessage("Invalid document properties. Please check details.", "For image generation a document with color model 'RGB/Alpha', color depth '8-bit integer' is needed.")
          return
       # document too small or large
-      elif doc.width() < 512 or doc.width() > 1024 or doc.height() < 512 or doc.height() > 1024:
-         utils.errorMessage("Invalid document size. Please check details.", "The document needs to have a width/height which is between 512 and 1024.")
+      elif doc.width() < 384 or doc.width() > 1024 or doc.height() < 384 or doc.height() > 1024:
+         utils.errorMessage("Invalid document size. Please check details.", "Document needs to be between 384x384 and 1024x1024.")
          return
-      # img2img: missing init image layer
-      elif mode == worker.MODE_IMG2IMG and worker.getInitNode() is None:
-         utils.errorMessage("Please add a visible layer which shows the init image.", "")
+      # img2img/inpainting: missing init image layer
+      elif (mode == worker.MODE_IMG2IMG or mode == worker.MODE_INPAINTING) and worker.getInitNode() is None:
+         utils.errorMessage("Please add a visible layer which shows the init/inpainting image.", "")
          return
       # img2img/inpainting: selection has to be removed otherwise crashes krita when creating init image
       elif (mode == worker.MODE_IMG2IMG or mode == worker.MODE_INPAINTING) and doc.selection() is not None:
@@ -244,7 +244,7 @@ class Dialog(QDialog):
       if ev.type() == worker.eventId:
          if ev.updateType == UpdateEvent.TYPE_CHECKED:
             self.statusDisplay.setText(ev.message)
-         elif ev.updateType == UpdateEvent.TYPE_TIMEOUT:
+         elif ev.updateType == UpdateEvent.TYPE_INFO:
             self.statusDisplay.setText(ev.message)
             self.setEnabledStatus(True)
          elif ev.updateType == UpdateEvent.TYPE_ERROR:
@@ -412,23 +412,28 @@ class Worker():
 
          self.checkCounter = self.checkCounter + 1
 
-         if self.checkCounter < self.checkMax and data["done"] == False and self.cancelled == False:
-            if data["processing"] == 0:
-               message = "Queue position: " + str(data["queue_position"]) + ", Wait time: " + str(data["wait_time"]) + "s"
-            elif data["processing"] > 0:
-               message = "Generating..."
+         if self.checkCounter < self.checkMax and data["done"] is False and self.cancelled is False:
+            if data["is_possible"] is True:
+               if data["processing"] == 0:
+                  message = "Queue position: " + str(data["queue_position"]) + ", Wait time: " + str(data["wait_time"]) + "s"
+               elif data["processing"] > 0:
+                  message = "Generating..."
 
-            ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_CHECKED, message)
-            QApplication.postEvent(self.dialog, ev)
+               ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_CHECKED, message)
+               QApplication.postEvent(self.dialog, ev)
 
-            timer = threading.Timer(self.CHECK_WAIT, self.checkStatus)
-            timer.start()
+               timer = threading.Timer(self.CHECK_WAIT, self.checkStatus)
+               timer.start()
+            else:
+               self.cancelled = True
+               message = "Currently no worker available to generate your image. Please try again later."
+               ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_INFO, message)
+               QApplication.postEvent(self.dialog, ev)
          elif self.checkCounter == self.checkMax and self.cancelled == False:
             self.cancelled = True
-
             minutes = (self.checkMax * self.CHECK_WAIT)/60
             message = "Image generation timed out after " + str(minutes) + " minutes. Please try it again later."
-            ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_TIMEOUT, message)
+            ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_INFO, message)
             QApplication.postEvent(self.dialog, ev)
          elif data["done"] == True and self.cancelled == False:
             images = self.getImages()
@@ -567,7 +572,7 @@ class Utils():
 class UpdateEvent(QEvent):
    TYPE_CHECKED = 0
    TYPE_ERROR = 1
-   TYPE_TIMEOUT = 2
+   TYPE_INFO = 2
    TYPE_FINISHED = 3
 
    def __init__(self, eventId, updateType, message = ""):
