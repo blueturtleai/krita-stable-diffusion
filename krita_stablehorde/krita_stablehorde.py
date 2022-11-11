@@ -1,4 +1,4 @@
-# v1.3.1
+# v1.3.2
 
 import base64
 import json
@@ -9,7 +9,7 @@ import math
 
 from krita import *
 
-VERSION = 131
+VERSION = 132
 
 class Stablehorde(Extension):
    def __init__(self, parent):
@@ -443,6 +443,20 @@ class Worker():
             QApplication.postEvent(self.dialog, ev)
 
          return
+      except urllib.error.HTTPError as ex:
+         try:
+            data = ex.read()
+            data = json.loads(data)
+
+            if "message" in data:
+               message = data["message"]
+            else:
+               message = str(ex)
+         except Exception:
+            message = str(ex)
+
+         ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_ERROR, message)
+         QApplication.postEvent(self.dialog, ev)
       except Exception as ex:
          ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_ERROR, str(ex))
          QApplication.postEvent(self.dialog, ev)
@@ -519,6 +533,20 @@ class Worker():
             raise Exception(data)
 
          self.checkStatus()
+      except urllib.error.HTTPError as ex:
+         try:
+            data = ex.read()
+            data = json.loads(data)
+
+            if "message" in data:
+               message = data["message"]
+            else:
+               message = str(ex)
+         except Exception:
+            message = str(ex)
+
+         ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_ERROR, message)
+         QApplication.postEvent(self.dialog, ev)
       except Exception as ex:
          ev = UpdateEvent(worker.eventId, UpdateEvent.TYPE_ERROR, str(ex))
          QApplication.postEvent(self.dialog, ev)
