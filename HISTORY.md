@@ -11,7 +11,7 @@ Changes
 
 Bugfixes
 - In the dialog init strength selector was not disabled in mode inpainting.
-- In the dialog in mode inpainting was not checked if a layer with an inpaiting image exists.
+- In the dialog in mode inpainting was not checked if a layer with an inpainting image exists.
 
 ### 1.3.0
 Changes
