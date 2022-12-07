@@ -1,4 +1,4 @@
-# v1.3.2
+# v1.3.3
 
 import base64
 import json
@@ -9,7 +9,7 @@ import math
 
 from krita import *
 
-VERSION = 132
+VERSION = 133
 
 class Stablehorde(Extension):
    def __init__(self, parent):
@@ -481,7 +481,8 @@ class Worker():
             "prompt": self.dialog.prompt.toPlainText(),
             "params": params,
             "nsfw": nsfw,
-            "censor_nsfw": False
+            "censor_nsfw": False,
+            "r2": False
          }
 
          doc = Application.activeDocument()
