@@ -14,7 +14,7 @@ The plugin has been tested in Krita 5.1.1.
 
 **IMPORTANT:** If you are running Linux, please make sure, you have webp support for Qt5 installed, as this is the image format stablehorde uses. Execute the following command to check, if it's already supported: ```python -c "from PyQt5.Qt import *; print([bytes(x).decode('ascii') for x in QImageReader.supportedImageFormats()])"```. To install it, use ```sudo pacman -S qt5-imageformats``` (Arch) or ```sudo apt install qt5-image-formats-plugins``` (Debian).
 
-1. Download the [Krita plugin zip](https://github.com/blueturtleai/krita-stable-diffusion/releases/download/v1.3.2/krita_stablehorde_1_3_2.zip).
+1. Download the [Krita plugin zip](https://github.com/blueturtleai/krita-stable-diffusion/releases/download/v1.3.3/krita_stablehorde_1_3_3.zip).
 
 2. Start Krita and open the "Tools/Scripts/Import Python Plugin from File" menu and select the downloaded zip. Restart Krita.
 
