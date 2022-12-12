@@ -1,4 +1,4 @@
-# v1.3.3
+# v1.3.4
 
 import base64
 import json
@@ -6,10 +6,11 @@ import ssl
 import threading
 import urllib
 import math
+import re
 
 from krita import *
 
-VERSION = 133
+VERSION = 134
 
 class Stablehorde(Extension):
    def __init__(self, parent):
@@ -380,8 +381,14 @@ class Worker():
    def displayGenerated(self, images):
       for image in images:
          seed = image["seed"]
-         bytes = base64.b64decode(image["img"])
-         bytes = QByteArray(bytes)
+
+         if re.match("^https.*", image["img"]):
+            response = urllib.request.urlopen(image["img"])
+            bytes = response.read()
+         else:
+            bytes = base64.b64decode(image["img"])
+            bytes = QByteArray(bytes)
+
          image = QImage()
          image.loadFromData(bytes, 'WEBP')
          ptr = image.bits()
@@ -400,7 +407,6 @@ class Worker():
       response = urllib.request.urlopen(url)
       data = response.read()
       data = json.loads(data)
-
       return data["generations"]
 
    def checkStatus(self):
@@ -482,7 +488,7 @@ class Worker():
             "params": params,
             "nsfw": nsfw,
             "censor_nsfw": False,
-            "r2": False
+            "r2": True
          }
 
          doc = Application.activeDocument()
